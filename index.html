@@ -1150,8 +1150,8 @@ Mateo</textarea>
   function renderAuth(mode){
     var isReg=mode!=="login";
     var social='<div class="social-auth">'+
-      '<button type="button">'+googleIcon+' Continuar con Google</button>'+
-      '<button type="button">'+brandIcon("facebook",18)+' Continuar con Facebook</button></div>'+
+      '<button type="button" data-oauth="google">'+googleIcon+' Continuar con Google</button>'+
+      '<button type="button" data-oauth="facebook">'+brandIcon("facebook",18)+' Continuar con Facebook</button></div>'+
       '<div class="divider">o con tu email</div>';
     if(isReg){
       authBody.innerHTML='<div class="a-head"><h3 id="authTitle">Crea tu cuenta gratis</h3>'+
@@ -1174,6 +1174,13 @@ Mateo</textarea>
     }
     var sw=authBody.querySelector(".switch a");
     if(sw)sw.addEventListener("click",function(){renderAuth(this.getAttribute("data-goto"));});
+    authBody.querySelectorAll("[data-oauth]").forEach(function(b){
+      b.addEventListener("click",function(){
+        var p=this.getAttribute("data-oauth");
+        if(!apiEnabled){ alert("El acceso con "+(p==="google"?"Google":"Facebook")+" funciona en la versión publicada (online)."); return; }
+        window.location.href="/api/oauth/"+p+"/start";
+      });
+    });
     var form=document.getElementById("authForm");
     form.addEventListener("submit",function(e){
       e.preventDefault();var ok=true;
@@ -1237,6 +1244,16 @@ Mateo</textarea>
 
   /* cargar sesión actual */
   if(apiEnabled){ api("/auth/me").then(function(d){ if(d&&d.user){currentUser=d.user;updateNav();} }).catch(function(){}); }
+
+  /* retorno de OAuth (Google / Facebook) */
+  (function(){
+    var qs=new URLSearchParams(location.search);
+    var err=qs.get("autherror");
+    if(err) setTimeout(function(){ alert(err); },300);
+    if(qs.has("welcome")||qs.has("autherror")){
+      try{ history.replaceState({}, "", location.pathname); }catch(e){}
+    }
+  })();
 
   /* global escape */
   addEventListener("keydown",function(e){

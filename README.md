@@ -74,10 +74,31 @@ npm run dev               # ejecuta "vercel dev" (requiere la CLI de Vercel)
 > El modo demo (abrir `index.html` con doble clic) no usa el backend: el sorteo
 > funciona, pero registro/login y guardado quedan simulados.
 
+## Login con Google y Facebook (OAuth)
+
+El flujo OAuth ya está implementado (`/api/oauth/:provider/start` y
+`/api/oauth/:provider/callback`). Solo tienes que crear las credenciales y
+ponerlas como variables de entorno en Vercel. Las cuentas se **unifican por
+email**: si el correo ya existe, entra a esa cuenta; si no, se crea.
+
+**Google** — https://console.cloud.google.com → *APIs y servicios* →
+*Credenciales* → *Crear credenciales* → *ID de cliente de OAuth* →
+*Aplicación web*:
+- **Authorized redirect URI:** `https://TU-DOMINIO.vercel.app/api/oauth/google/callback`
+- Copia el *Client ID* y *Client secret* → variables `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` en Vercel.
+
+**Facebook** — https://developers.facebook.com → *Crear app* → añade
+*Inicio de sesión con Facebook* → *Configuración*:
+- **Valid OAuth Redirect URI:** `https://TU-DOMINIO.vercel.app/api/oauth/facebook/callback`
+- Copia el *App ID* y *App secret* → variables `FACEBOOK_CLIENT_ID` y `FACEBOOK_CLIENT_SECRET` en Vercel.
+
+Tras añadir las variables, **vuelve a desplegar**. Los botones "Continuar con…"
+del sitio ya están conectados a este flujo.
+
 ## Notas
 
-- **Login con Google/Facebook:** los botones son visuales. Integrarlos requiere
-  registrar apps OAuth con tus credenciales; el email + contraseña ya es real.
+- El login con **email + contraseña** ya es real. Los botones de Google/Facebook
+  quedan activos en cuanto configures las credenciales de arriba.
 - **Redes sociales (Instagram, TikTok, etc.):** aún no conectadas. Requieren
   apps de desarrollador aprobadas por cada plataforma (siguiente etapa).
 - La base de datos crea sus tablas sola la primera vez (`ensureSchema`).
