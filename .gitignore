@@ -1,0 +1,10 @@
+node_modules
+.vercel
+.env
+.env*.local
+*.log
+.DS_Store
+
+# Herramientas locales de Claude Code
+.claude/
+skills-lock.json

@@ -1,0 +1,13 @@
+{
+  "name": "azar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AZAR — Sorteos online (app full-stack sobre Vercel + Postgres)",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}
