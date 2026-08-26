@@ -673,7 +673,7 @@ Mateo</textarea>
       </div>
       <div><h4>Producto</h4><a href="#tipos">Sorteos</a><a href="#redes">Redes</a><a href="#precios">Precios</a><a href="#tool">Ruleta</a></div>
       <div><h4>Recursos</h4><a href="#faq">Centro de ayuda</a><a href="#">Blog</a><a href="#">Programa de referidos</a><a href="#">API</a></div>
-      <div><h4>Legal</h4><a href="#">Términos</a><a href="#">Privacidad</a><a href="#">Cookies</a></div>
+      <div><h4>Legal</h4><a href="/privacidad.html">Privacidad</a><a href="/eliminar-datos.html">Eliminar mis datos</a><a href="#">Términos</a></div>
     </div>
     <div class="foot-bottom">
       <span>© 2026 AZAR. Hecho para sortear con estilo.</span>
@@ -1227,7 +1227,17 @@ Mateo</textarea>
           '<span class="win">'+w+' →</span></a>';
       }).join("");
       authBody.innerHTML='<div class="a-head"><h3>Mis sorteos</h3><p class="a-sub">'+list.length+' sorteo(s) guardado(s)</p></div>'+
-        (items?('<div class="sorteo-list">'+items+'</div>'):'<p class="a-sub" style="text-align:center">Aún no tienes sorteos guardados. ¡Haz el primero! 🎲</p>');
+        (items?('<div class="sorteo-list">'+items+'</div>'):'<p class="a-sub" style="text-align:center">Aún no tienes sorteos guardados. ¡Haz el primero! 🎲</p>')+
+        '<div style="margin-top:1.3rem;text-align:center"><a href="#" id="delAcc" style="color:var(--muted);font-size:.78rem;text-decoration:underline;cursor:pointer">Eliminar mi cuenta y todos mis datos</a></div>';
+      var del=document.getElementById("delAcc");
+      if(del)del.addEventListener("click",function(e){
+        e.preventDefault();
+        if(!confirm("¿Seguro que quieres eliminar tu cuenta? Se borrarán tu perfil y TODOS tus sorteos de forma permanente. Esta acción no se puede deshacer."))return;
+        api("/account",{method:"DELETE"}).then(function(){
+          currentUser=null;updateNav();closeAuth();
+          alert("Tu cuenta y tus datos fueron eliminados.");
+        }).catch(function(){ alert("No se pudo eliminar la cuenta. Inténtalo de nuevo."); });
+      });
     }).catch(function(){ authBody.innerHTML='<div class="a-head"><h3>Mis sorteos</h3><p class="a-sub">No se pudo cargar tu historial.</p></div>'; });
   }
   function doLogout(){ (apiEnabled?api("/auth/logout",{method:"POST"}).catch(function(){}):Promise.resolve()).then(function(){currentUser=null;updateNav();}); }
