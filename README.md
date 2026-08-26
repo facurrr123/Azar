@@ -95,6 +95,25 @@ email**: si el correo ya existe, entra a esa cuenta; si no, se crea.
 Tras añadir las variables, **vuelve a desplegar**. Los botones "Continuar con…"
 del sitio ya están conectados a este flujo.
 
+## Importar comentarios de YouTube
+
+El sorteo puede traer a los comentaristas de un video público de YouTube como
+participantes (`POST /api/import/youtube`). Requiere una **API key** de la
+*YouTube Data API v3*:
+
+1. https://console.cloud.google.com → *APIs y servicios* → *Biblioteca* →
+   busca **YouTube Data API v3** → **Habilitar**.
+2. *Credenciales* → *Crear credenciales* → **Clave de API** → cópiala.
+3. En Vercel, añade la variable `YOUTUBE_API_KEY` con ese valor → **Redeploy**.
+
+En el sitio, abre **📺 Importar comentarios de YouTube**, pega la URL del video
+y pulsa *Traer comentarios*: se rellenan los participantes y se sortea con la
+ruleta/animaciones de siempre.
+
+> Otras redes (Instagram, TikTok, X): su acceso a comentarios está restringido
+> por cada plataforma (revisión de app, verificación de empresa o API de pago),
+> por lo que no están integradas.
+
 ## Notas
 
 - El login con **email + contraseña** ya es real. Los botones de Google/Facebook

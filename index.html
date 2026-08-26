@@ -317,6 +317,18 @@ footer{padding:3.5rem 0 2rem;border-top:1px solid var(--border);background:var(-
   padding:.55rem;font-family:inherit;font-weight:700;font-size:.82rem;color:var(--muted);cursor:pointer;
   transition:.2s;display:flex;align-items:center;justify-content:center;gap:.35rem}
 .anim-pick button.act{border-color:var(--accent);color:var(--accent);background:transparent}
+.yt-import{margin-bottom:.9rem}
+.yt-toggle{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  padding:.6rem;font-family:inherit;font-weight:700;font-size:.85rem;color:var(--text);cursor:pointer;transition:.2s}
+.yt-toggle:hover{border-color:var(--accent)}
+.yt-panel{margin-top:.7rem;display:flex;flex-direction:column;gap:.55rem;padding:.9rem;border:1px dashed var(--border-strong);border-radius:12px}
+.yt-panel input[type=text]{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  padding:.6rem .75rem;color:var(--text);font-family:inherit;font-size:.88rem}
+.yt-panel input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.yt-check{display:flex;align-items:center;gap:.45rem;font-size:.8rem;color:var(--muted);font-weight:600}
+.yt-check input{accent-color:var(--accent)}
+.yt-panel .btn{justify-content:center}
+.yt-status{font-size:.8rem;color:var(--muted);min-height:1em;text-align:center}
 .sound-toggle{display:inline-flex;align-items:center;gap:.3rem;background:transparent;border:1px solid var(--border);
   border-radius:999px;padding:.35rem .8rem;font-family:inherit;font-weight:700;font-size:.78rem;color:var(--muted);
   cursor:pointer;transition:.2s;margin-bottom:.9rem}
@@ -480,6 +492,16 @@ Sofía
 Diego
 Valentina
 Mateo</textarea>
+      </div>
+      <div class="yt-import">
+        <button type="button" class="yt-toggle" id="ytToggle">📺 Importar comentarios de YouTube</button>
+        <div class="yt-panel hidden" id="ytPanel">
+          <input id="ytUrl" type="text" placeholder="URL del video de YouTube">
+          <input id="ytKeyword" type="text" placeholder="Palabra clave (opcional)">
+          <label class="yt-check"><input type="checkbox" id="ytDedupe" checked> Un participante por persona</label>
+          <button type="button" class="btn btn-primary" id="ytFetch">Traer comentarios</button>
+          <div class="yt-status" id="ytStatus"></div>
+        </div>
       </div>
       <div class="anim-pick" id="animPick">
         <button data-anim="reel" class="act" type="button">🎞️ Carrete</button>
@@ -870,6 +892,30 @@ Mateo</textarea>
   function parseNames(){return namesEl.value.split("\n").map(function(s){return s.trim();}).filter(Boolean);}
   function updateCount(){partEl.textContent=parseNames().length;}
   namesEl.addEventListener("input",updateCount);updateCount();
+
+  /* ---- IMPORTAR DE YOUTUBE ---- */
+  var ytToggle=document.getElementById("ytToggle");
+  if(ytToggle){
+    ytToggle.addEventListener("click",function(){ document.getElementById("ytPanel").classList.toggle("hidden"); });
+    document.getElementById("ytFetch").addEventListener("click",function(){
+      var st=document.getElementById("ytStatus");
+      var url=document.getElementById("ytUrl").value.trim();
+      var keyword=document.getElementById("ytKeyword").value.trim();
+      var dedupe=document.getElementById("ytDedupe").checked;
+      if(!url){ st.textContent="Pega la URL de un video de YouTube."; return; }
+      if(!apiEnabled){ st.textContent="La importación funciona en la versión publicada (online)."; return; }
+      var btn=this; btn.disabled=true; btn.style.opacity=".6"; st.textContent="Trayendo comentarios… (puede tardar unos segundos)";
+      api("/import/youtube",{method:"POST",body:JSON.stringify({url:url,keyword:keyword,dedupe:dedupe})})
+        .then(function(d){
+          namesEl.value=(d.participants||[]).join("\n"); updateCount();
+          var t=document.getElementById("title");
+          if(d.title && t && (!t.value.trim() || t.value.trim()==="Sorteo de la comunidad")) t.value="Sorteo · "+d.title;
+          st.textContent="✓ "+d.count+" participantes importados"+(d.truncated?" (máximo alcanzado)":"")+".";
+        })
+        .catch(function(err){ st.textContent="⚠️ "+((err&&err.message)||"No se pudo importar."); })
+        .then(function(){ btn.disabled=false; btn.style.opacity=""; });
+    });
+  }
 
   /* ---- CONFETTI ---- */
   var cvs=document.getElementById("confetti"),ctx=cvs.getContext("2d"),parts=[],raf=null;
