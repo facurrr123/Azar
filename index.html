@@ -503,6 +503,28 @@ Mateo</textarea>
           <div class="yt-status" id="ytStatus"></div>
         </div>
       </div>
+      <div class="yt-import">
+        <button type="button" class="yt-toggle" id="fbToggle">📷 Importar comentarios de Facebook / Instagram</button>
+        <div class="yt-panel hidden" id="fbPanel">
+          <div id="fbConnectBox">
+            <div class="yt-status">Conectá tu cuenta para elegir un post y traer sus comentarios.</div>
+            <a class="btn btn-primary" id="fbConnectBtn" href="/api/social/connect">Conectar con Facebook</a>
+          </div>
+          <div id="fbPickBox" class="hidden">
+            <div class="anim-pick" style="margin:.2em 0 .5em">
+              <button type="button" class="act" data-net="facebook" id="fbNetFb">Facebook</button>
+              <button type="button" data-net="instagram" id="fbNetIg">Instagram</button>
+            </div>
+            <select id="fbPage" style="width:100%;margin:.3em 0;padding:.7em;border-radius:12px"></select>
+            <select id="fbPost" style="width:100%;margin:.3em 0;padding:.7em;border-radius:12px"></select>
+            <input id="fbKeyword" type="text" placeholder="Palabra clave (opcional)">
+            <label class="yt-check"><input type="checkbox" id="fbDedupe" checked> Un participante por persona</label>
+            <button type="button" class="btn btn-primary" id="fbFetch">Traer comentarios</button>
+            <a href="#" id="fbDisconnect" style="display:inline-block;margin-left:.8em;font-size:.85em;opacity:.7">Desconectar</a>
+          </div>
+          <div class="yt-status" id="fbStatus"></div>
+        </div>
+      </div>
       <div class="anim-pick" id="animPick">
         <button data-anim="reel" class="act" type="button">🎞️ Carrete</button>
         <button data-anim="wheel" type="button">🎡 Ruleta</button>
@@ -915,6 +937,93 @@ Mateo</textarea>
         .catch(function(err){ st.textContent="⚠️ "+((err&&err.message)||"No se pudo importar."); })
         .then(function(){ btn.disabled=false; btn.style.opacity=""; });
     });
+  }
+
+  /* ---- IMPORTAR DE FACEBOOK / INSTAGRAM ---- */
+  var fbToggle=document.getElementById("fbToggle");
+  if(fbToggle){
+    var fbNet="facebook", fbInited=false;
+    var fbSt=document.getElementById("fbStatus");
+    var fbPanel=document.getElementById("fbPanel");
+    var fbConnectBox=document.getElementById("fbConnectBox");
+    var fbPickBox=document.getElementById("fbPickBox");
+    var fbPageSel=document.getElementById("fbPage");
+    var fbPostSel=document.getElementById("fbPost");
+
+    function fbErr(err){
+      var msg=(err&&err.message)||"No se pudo.";
+      if(/conect|expir/i.test(msg)){ showConnect(); }
+      fbSt.textContent="⚠️ "+msg;
+    }
+    function showConnect(){ fbConnectBox.classList.remove("hidden"); fbPickBox.classList.add("hidden"); }
+    function showPick(){ fbConnectBox.classList.add("hidden"); fbPickBox.classList.remove("hidden"); loadPages(); }
+
+    function loadPages(){
+      fbSt.textContent="Cargando tus páginas…";
+      api("/social/data?action=pages").then(function(d){
+        var ps=d.pages||[];
+        if(!ps.length){ fbSt.textContent="No encontramos Páginas administradas por tu cuenta."; return; }
+        fbPageSel.innerHTML=ps.map(function(p){return '<option value="'+p.id+'">'+escapeHTML(p.name)+(p.hasInstagram?" (con IG)":"")+'</option>';}).join("");
+        fbSt.textContent=""; loadPosts();
+      }).catch(fbErr);
+    }
+    function loadPosts(){
+      var pageId=fbPageSel.value; if(!pageId) return;
+      fbSt.textContent="Cargando posts…"; fbPostSel.innerHTML="";
+      var action=fbNet==="instagram"?"ig-media":"posts";
+      api("/social/data?action="+action+"&pageId="+encodeURIComponent(pageId)).then(function(d){
+        var items=fbNet==="instagram"?(d.media||[]):(d.posts||[]);
+        if(!items.length){ fbSt.textContent="No hay posts para elegir en "+(fbNet==="instagram"?"esa cuenta de Instagram":"esa Página")+"."; return; }
+        fbPostSel.innerHTML=items.map(function(it){return '<option value="'+it.id+'">'+escapeHTML(it.text)+'</option>';}).join("");
+        fbSt.textContent="";
+      }).catch(fbErr);
+    }
+    function setNet(n){
+      fbNet=n;
+      document.getElementById("fbNetFb").classList.toggle("act",n==="facebook");
+      document.getElementById("fbNetIg").classList.toggle("act",n==="instagram");
+      loadPosts();
+    }
+    function fbInit(){
+      if(!apiEnabled){ fbSt.textContent="La importación funciona en la versión publicada (online)."; return; }
+      if(fbInited) return; fbInited=true;
+      api("/social/data?action=status").then(function(d){ d.connected?showPick():showConnect(); }).catch(showConnect);
+    }
+
+    fbToggle.addEventListener("click",function(){ fbPanel.classList.toggle("hidden"); if(!fbPanel.classList.contains("hidden")) fbInit(); });
+    document.getElementById("fbNetFb").addEventListener("click",function(){ setNet("facebook"); });
+    document.getElementById("fbNetIg").addEventListener("click",function(){ setNet("instagram"); });
+    fbPageSel.addEventListener("change",loadPosts);
+    document.getElementById("fbDisconnect").addEventListener("click",function(e){
+      e.preventDefault();
+      api("/social/data?action=disconnect").then(function(){ fbInited=false; showConnect(); fbSt.textContent="Desconectado."; });
+    });
+    document.getElementById("fbFetch").addEventListener("click",function(){
+      var pageId=fbPageSel.value, postId=fbPostSel.value;
+      if(!pageId||!postId){ fbSt.textContent="Elegí una página y un post."; return; }
+      var kw=document.getElementById("fbKeyword").value.trim();
+      var dedupe=document.getElementById("fbDedupe").checked;
+      var action=fbNet==="instagram"?"ig-comments":"comments";
+      var idParam=fbNet==="instagram"?("&mediaId="+encodeURIComponent(postId)):("&postId="+encodeURIComponent(postId));
+      var btn=this; btn.disabled=true; btn.style.opacity=".6"; fbSt.textContent="Trayendo comentarios…";
+      api("/social/data?action="+action+"&pageId="+encodeURIComponent(pageId)+idParam+"&keyword="+encodeURIComponent(kw)+"&dedupe="+dedupe)
+        .then(function(d){
+          namesEl.value=(d.participants||[]).join("\n"); updateCount();
+          fbSt.textContent="✓ "+d.count+" participantes importados"+(d.truncated?" (máximo alcanzado)":"")+".";
+        })
+        .catch(fbErr)
+        .then(function(){ btn.disabled=false; btn.style.opacity=""; });
+    });
+
+    // Volviste del OAuth de conexión (?social=...)
+    var fbSp=new URLSearchParams(location.search);
+    if(fbSp.get("social")){
+      var s=fbSp.get("social");
+      fbPanel.classList.remove("hidden"); fbInited=true;
+      if(s==="connected"){ showPick(); }
+      else { showConnect(); fbSt.textContent = s==="cancelled"?"Conexión cancelada.":"No se pudo conectar. Probá de nuevo."; }
+      history.replaceState({},"",location.pathname);
+    }
   }
 
   /* ---- CONFETTI ---- */

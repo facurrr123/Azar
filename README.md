@@ -110,14 +110,38 @@ En el sitio, abre **📺 Importar comentarios de YouTube**, pega la URL del vide
 y pulsa *Traer comentarios*: se rellenan los participantes y se sortea con la
 ruleta/animaciones de siempre.
 
-> Otras redes (Instagram, TikTok, X): su acceso a comentarios está restringido
-> por cada plataforma (revisión de app, verificación de empresa o API de pago),
+## Importar comentarios de Facebook e Instagram
+
+El sorteo también puede traer los comentaristas de un post de una **Página de
+Facebook** o de una cuenta de **Instagram Business** que administre el usuario
+(flujo *conectar → elegir post*). El token de Facebook se guarda **solo del lado
+del servidor** (cookie firmada httpOnly); nunca se expone al navegador.
+
+Endpoints (`lib/social.js` + `api/social/`):
+- `GET /api/social/connect` — inicia el OAuth de conexión (permisos de Páginas/IG).
+- `GET /api/social/callback` — guarda el token en cookie firmada.
+- `GET /api/social/data?action=...` — `pages`, `posts`, `comments`, `ig-media`,
+  `ig-comments`, `status`, `disconnect`.
+
+**Configuración necesaria en la app de Meta (developers.facebook.com):**
+1. **Valid OAuth Redirect URIs** → añadir también
+   `https://TU-DOMINIO/api/social/callback` (además del de login).
+2. Permisos: `pages_show_list`, `pages_read_engagement`, `instagram_basic`,
+   `instagram_manage_comments`. En **modo desarrollo** el admin/los testers ya
+   pueden usarlos; para el **público** hacen falta **App Review** (con video) y la
+   **verificación de negocio** (ya hecha).
+3. Instagram requiere una cuenta **IG Business/Creator vinculada a la Página**.
+
+> Límite de Meta: solo se leen comentarios de posts de **Páginas/IG que el propio
+> usuario administra** (no de posts ajenos ni de perfiles personales).
+
+> TikTok / X: su acceso a comentarios sigue restringido (API de pago o revisión),
 > por lo que no están integradas.
 
 ## Notas
 
 - El login con **email + contraseña** ya es real. Los botones de Google/Facebook
   quedan activos en cuanto configures las credenciales de arriba.
-- **Redes sociales (Instagram, TikTok, etc.):** aún no conectadas. Requieren
-  apps de desarrollador aprobadas por cada plataforma (siguiente etapa).
+- **Redes sociales:** YouTube, **Facebook** e **Instagram** integradas para traer
+  comentarios (ver secciones arriba). TikTok / X aún no.
 - La base de datos crea sus tablas sola la primera vez (`ensureSchema`).
