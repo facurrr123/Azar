@@ -30,8 +30,8 @@ function excerpt(s, n = 90) {
 
 /* ------------------------- CONNECT (inicio OAuth) ------------------------- */
 async function connect(req, res) {
-  const clientId = process.env.FACEBOOK_CLIENT_ID;
-  if (!clientId) return res.status(500).send("La conexión con Facebook no está configurada (falta FACEBOOK_CLIENT_ID).");
+  const clientId = process.env.FB_SOCIAL_CLIENT_ID || process.env.FACEBOOK_CLIENT_ID;
+  if (!clientId) return res.status(500).send("La conexión con Facebook no está configurada (falta FB_SOCIAL_CLIENT_ID).");
 
   const nonce = crypto.randomBytes(16).toString("hex");
   const state = signState({ p: "social", n: nonce, exp: Date.now() + 10 * 60 * 1000 });
@@ -60,8 +60,8 @@ async function callback(req, res) {
     const m = cookie.match(/(?:^|;\s*)social_nonce=([^;]+)/);
     if (!st || st.p !== "social" || !m || m[1] !== st.n) return back(res, "social=badstate");
 
-    const clientId = process.env.FACEBOOK_CLIENT_ID;
-    const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
+    const clientId = process.env.FB_SOCIAL_CLIENT_ID || process.env.FACEBOOK_CLIENT_ID;
+    const clientSecret = process.env.FB_SOCIAL_CLIENT_SECRET || process.env.FACEBOOK_CLIENT_SECRET;
     if (!clientId || !clientSecret) return back(res, "social=error");
 
     // code -> token de usuario (corta duración)
