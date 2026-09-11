@@ -119,6 +119,22 @@ async function data(req, res) {
     return res.status(200).json(j);
   }
 
+  // Diagnóstico temporal: granular_scopes (qué Páginas/IG concedió el token).
+  if (action === "granular") {
+    try {
+      const appId = process.env.FB_SOCIAL_CLIENT_ID || process.env.FACEBOOK_CLIENT_ID;
+      const appSecret = process.env.FB_SOCIAL_CLIENT_SECRET || process.env.FACEBOOK_CLIENT_SECRET;
+      const appToken = `${appId}|${appSecret}`;
+      const r = await fetch("https://graph.facebook.com/v19.0/debug_token?" +
+        new URLSearchParams({ input_token: userToken, access_token: appToken }));
+      const dbg = await r.json().catch(() => ({}));
+      const scopes = (dbg && dbg.data && dbg.data.granular_scopes) || null;
+      return res.status(200).json({ granular_scopes: scopes });
+    } catch (e) {
+      return res.status(200).json({ error: String(e && e.message || e) });
+    }
+  }
+
   // Diagnóstico temporal: ejecuta un GET arbitrario en la Graph con el token real.
   //   ?action=debug&q=me/accounts&fields=id,name
   if (action === "debug") {
