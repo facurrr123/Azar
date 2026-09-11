@@ -108,6 +108,12 @@ async function data(req, res) {
   if (action === "status") return res.status(200).json({ connected: !!userToken });
   if (!userToken) return res.status(401).json({ error: "No estás conectado con Facebook.", needConnect: true });
 
+  // Diagnóstico: permisos concedidos/rechazados por el usuario para esta app.
+  if (action === "permissions") {
+    const j = await graph("me/permissions", {}, userToken);
+    return res.status(200).json(j);
+  }
+
   const kw = String(req.query.keyword || "").trim().toLowerCase();
   const dedup = req.query.dedupe !== "false";
 
