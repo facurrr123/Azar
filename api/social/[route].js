@@ -37,13 +37,18 @@ async function connect(req, res) {
   const state = signState({ p: "social", n: nonce, exp: Date.now() + 10 * 60 * 1000 });
   res.setHeader("Set-Cookie", `social_nonce=${nonce}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax${secureFlag()}`);
 
+  // App tipo Empresa: usa "Inicio de sesión con Facebook para empresas", que pide
+  // un config_id (define permisos + activos Páginas/IG y muestra el selector de
+  // Página), en vez de la lista de scope. Si no hay config_id, cae al flujo clásico.
+  const configId = process.env.FB_SOCIAL_CONFIG_ID || "1096459939587233";
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: callbackUri(req),
     response_type: "code",
-    scope: "public_profile," + CONNECT_SCOPE,
     state,
   });
+  if (configId) params.set("config_id", configId);
+  else params.set("scope", "public_profile," + CONNECT_SCOPE);
   res.writeHead(302, { Location: `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}` });
   res.end();
 }
@@ -111,18 +116,6 @@ async function data(req, res) {
   // Diagnóstico: permisos concedidos/rechazados por el usuario para esta app.
   if (action === "permissions") {
     const j = await graph("me/permissions", {}, userToken);
-    return res.status(200).json(j);
-  }
-
-  // Diagnóstico temporal: muestra los granular_scopes del token (qué Páginas/IG
-  // se concedieron por permiso) usando el app access token del servidor.
-  if (action === "granular") {
-    const appId = process.env.FB_SOCIAL_CLIENT_ID || process.env.FACEBOOK_CLIENT_ID;
-    const appSecret = process.env.FB_SOCIAL_CLIENT_SECRET || process.env.FACEBOOK_CLIENT_SECRET;
-    const appToken = `${appId}|${appSecret}`;
-    const r = await fetch("https://graph.facebook.com/v19.0/debug_token?" +
-      new URLSearchParams({ input_token: userToken, access_token: appToken }));
-    const j = await r.json().catch(() => ({}));
     return res.status(200).json(j);
   }
 
