@@ -114,6 +114,17 @@ async function data(req, res) {
     return res.status(200).json(j);
   }
 
+  // Diagnóstico temporal: ejecuta un GET arbitrario en la Graph con el token real.
+  //   ?action=debug&q=me/accounts&fields=id,name
+  if (action === "debug") {
+    const q = String(req.query.q || "me");
+    const params = {};
+    if (req.query.fields) params.fields = String(req.query.fields);
+    if (req.query.limit) params.limit = String(req.query.limit);
+    const j = await graph(q, params, userToken);
+    return res.status(200).json(j);
+  }
+
   const kw = String(req.query.keyword || "").trim().toLowerCase();
   const dedup = req.query.dedupe !== "false";
 
