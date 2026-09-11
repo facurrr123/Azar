@@ -8,7 +8,7 @@
 const crypto = require("crypto");
 const { signState, verifyState, secureFlag } = require("../../lib/oauth");
 const {
-  CONNECT_SCOPE, graph, pageToken,
+  CONNECT_SCOPE, graph, pageToken, listAllPages,
   setTokenCookie, clearTokenCookie, readTokenCookie,
 } = require("../../lib/social");
 
@@ -113,46 +113,13 @@ async function data(req, res) {
   if (action === "status") return res.status(200).json({ connected: !!userToken });
   if (!userToken) return res.status(401).json({ error: "No estás conectado con Facebook.", needConnect: true });
 
-  // Diagnóstico: permisos concedidos/rechazados por el usuario para esta app.
-  if (action === "permissions") {
-    const j = await graph("me/permissions", {}, userToken);
-    return res.status(200).json(j);
-  }
-
-  // Diagnóstico temporal: granular_scopes (qué Páginas/IG concedió el token).
-  if (action === "granular") {
-    try {
-      const appId = process.env.FB_SOCIAL_CLIENT_ID || process.env.FACEBOOK_CLIENT_ID;
-      const appSecret = process.env.FB_SOCIAL_CLIENT_SECRET || process.env.FACEBOOK_CLIENT_SECRET;
-      const appToken = `${appId}|${appSecret}`;
-      const r = await fetch("https://graph.facebook.com/v19.0/debug_token?" +
-        new URLSearchParams({ input_token: userToken, access_token: appToken }));
-      const dbg = await r.json().catch(() => ({}));
-      const scopes = (dbg && dbg.data && dbg.data.granular_scopes) || null;
-      return res.status(200).json({ granular_scopes: scopes });
-    } catch (e) {
-      return res.status(200).json({ error: String(e && e.message || e) });
-    }
-  }
-
-  // Diagnóstico temporal: ejecuta un GET arbitrario en la Graph con el token real.
-  //   ?action=debug&q=me/accounts&fields=id,name
-  if (action === "debug") {
-    const q = String(req.query.q || "me");
-    const params = {};
-    if (req.query.fields) params.fields = String(req.query.fields);
-    if (req.query.limit) params.limit = String(req.query.limit);
-    const j = await graph(q, params, userToken);
-    return res.status(200).json(j);
-  }
-
   const kw = String(req.query.keyword || "").trim().toLowerCase();
   const dedup = req.query.dedupe !== "false";
 
   try {
     if (action === "pages") {
-      const j = await graph("me/accounts", { fields: "id,name,instagram_business_account{id,username}", limit: "200" }, userToken);
-      const pages = (j.data || []).map((p) => ({ id: p.id, name: p.name, hasInstagram: !!p.instagram_business_account }));
+      const all = await listAllPages(userToken);
+      const pages = all.map((p) => ({ id: p.id, name: p.name, hasInstagram: !!p.instagram_business_account }));
       return res.status(200).json({ pages });
     }
 
