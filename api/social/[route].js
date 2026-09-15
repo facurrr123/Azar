@@ -113,14 +113,6 @@ async function data(req, res) {
   if (action === "status") return res.status(200).json({ connected: !!userToken });
   if (!userToken) return res.status(401).json({ error: "No estás conectado con Facebook.", needConnect: true });
 
-  // Diagnóstico temporal: comentarios crudos de un post de Página.
-  if (action === "rawcomments") {
-    const page = await pageToken(userToken, req.query.pageId);
-    const j = await graph(`${req.query.postId}/comments`,
-      { fields: "id,from,message,parent", limit: "100", filter: "stream" }, page.access_token);
-    return res.status(200).json(j);
-  }
-
   const kw = String(req.query.keyword || "").trim().toLowerCase();
   const dedup = req.query.dedupe !== "false";
 
